@@ -2,21 +2,29 @@
 
 var canvas, gl, program;
 
-var modelViewMatrix, modelViewMatrixLoc;
+var modelViewMatrix, modelViewMatrixLoc, normalLoc;
 
 var position = []
 var color = []
+var normals = []
+
+
+const X_OFFSET_OBJ_1 = -3;
 
 var theta = {
-    "body" : 45,
+    "body" : 45 ,
     "head" : 45,
     "leg"  : 0,
+    "hand_lower" : 0,
+    "hand_upper" : 0
 }
 
 var size = {
     "body": [2.0, 5.0, 2.0],
     "head": [3.0, 3.0, 3.0],
     "leg" : [1.0, 3.0, 0.2],
+    "hand_lower" : [2.0, 1.0, 0.2],
+    "hand_upper" :  [1.5, 1.0, 0.2],
 }
 
 var vertices = [
@@ -32,18 +40,23 @@ var vertices = [
 
 
 function quad(a, b, c, d) {
+    var t1 = subtract(vertices[b], vertices[a]);
+    var t2 = subtract(vertices[c], vertices[b]);
+    var normal = cross(t1, t2);
+    var normal = vec3(normal);
+
     position.push(vertices[a]);
-    color.push(vec4(0.2, 0.0, 0.2, 1.0))
+    normals.push(normal);
     position.push(vertices[b]);
-    color.push(vec4(0.2, 0.0, 0.2, 1.0))
+    normals.push(normal);
     position.push(vertices[c]);
-    color.push(vec4(0.2, 1.0, 0.2, 1.0))
+    normals.push(normal);
     position.push(vertices[a]);
-    color.push(vec4(0.2, 0.0, 0.2, 1.0))
+    normals.push(normal);
     position.push(vertices[c]);
-    color.push(vec4(0.2, 1.0, 0.2, 1.0))
+    normals.push(normal);
     position.push(vertices[d]);
-    color.push(vec4(0.2, 1.0, 0.2, 1.0))
+    normals.push(normal);
 }
 
 function setCube() {
@@ -81,20 +94,17 @@ window.onload = function init() {
     gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vPosition);
 
+    //Insert normal to vNormal
+    var normalBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(normals), gl.STATIC_DRAW);
 
-    //Insert color to fragment shader
-    var colorBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(color), gl.STATIC_DRAW);
+    var vNormal = gl.getAttribLocation(program, "vNormal");
+    gl.vertexAttribPointer(vNormal, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vNormal);
 
-    var vColor = gl.getAttribLocation(program, "vColor");
-    gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(vColor);
-
-    //color using uniform type
-    var colorLocation = gl.getUniformLocation(program, "uColor");
-    gl.uniform4fv(colorLocation, [0.2, 1.0, 0.2, 1.0]);
-
+    //Get Normal Matrix Location
+    normalLoc = gl.getUniformLocation(program, "normalMatrix");
 
     //Get Model View Matrix Location
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
@@ -111,42 +121,105 @@ window.onload = function init() {
 
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    resetModelViewMatrix()
+
     body();
-    head();
-    leg1();
-    leg2();
+    // head();
+    // leg1();
+    // leg2();
+    //
+    // drawHand();
     requestAnimationFrame(render);
 }
 
+function drawHand(){
+  handLowerLeft();
+  handLowerRight();
+  handUpperLeft();
+  // handLowerRight();
+}
+
+function resetModelViewMatrix(){
+  modelViewMatrix = rotate(theta.body, 0, 1, 0);
+}
+
 function body() {
-    modelViewMatrix = scalem(size.body[0], size.body[1], size.body[2]);
-    modelViewMatrix = mult(modelViewMatrix, translate(0.0, 0.0, 0.0));
-    modelViewMatrix = mult(modelViewMatrix, rotate(theta.head, 0, 1, 0));
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
-    gl.drawArrays(gl.TRIANGLES, 0, 36);
+    var s = scalem(size.body[0], size.body[1], size.body[2]);
+    var instanceMatrix = mult( translate( X_OFFSET_OBJ_1, 0, 0.0 ), s);
+    var t = mult(modelViewMatrix, instanceMatrix);
+    gl.uniformMatrix4fv(modelViewMatrixLoc,  false, flatten(t) );
+    var normalMatrix = inverse(modelViewMatrix);
+    gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
+    gl.drawArrays( gl.TRIANGLES, 0, 36 );
 }
 
 function head() {
-    theta.head+=5;
     modelViewMatrix = scalem(size.head[0], size.head[1], size.head[2]);
-    modelViewMatrix = mult(modelViewMatrix, translate(0.0, 0.25*size.body[1], 0.0));
-    modelViewMatrix = mult(modelViewMatrix, rotate(theta.head, 0, 1, 0));
+    modelViewMatrix = mult(modelViewMatrix, translate(0.65 * X_OFFSET_OBJ_1, 0.25*size.body[1], 0.0));
+    modelViewMatrix = mult(modelViewMatrix, rotate(theta.body, 0, 1, 0));
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+    var normalMatrix = inverse(modelViewMatrix);
+    gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
     gl.drawArrays(gl.TRIANGLES, 0, 36);
 }
 
 function leg1() {
     modelViewMatrix = scalem(size.leg[0], size.leg[1], size.leg[2]);
-    modelViewMatrix = mult(modelViewMatrix, translate(-0.3*size.body[0], -0.25*size.body[1], 0.0));
-    modelViewMatrix = mult(modelViewMatrix, rotate(theta.head, 0, 1, 0));
+    modelViewMatrix = mult(modelViewMatrix, translate(-0.3*size.body[0] + 2 * X_OFFSET_OBJ_1, -0.25*size.body[1], 0.0));
+    modelViewMatrix = mult(modelViewMatrix, rotate(theta.body, 0, 1, 0));
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+    var normalMatrix = inverse(modelViewMatrix);
+    gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
     gl.drawArrays(gl.TRIANGLES, 0, 36);
 }
 
 function leg2() {
     modelViewMatrix = scalem(size.leg[0], size.leg[1], size.leg[2]);
-    modelViewMatrix = mult(modelViewMatrix, translate(0.3*size.body[0], -0.25*size.body[1], 0.0));
-    modelViewMatrix = mult(modelViewMatrix, rotate(theta.head, 0, 1, 0));
+    modelViewMatrix = mult(modelViewMatrix, translate(0.3*size.body[0] + 2 * X_OFFSET_OBJ_1, -0.25*size.body[1], 0.0));
+    modelViewMatrix = mult(modelViewMatrix, rotate(theta.body, 0, 1, 0));
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+    var normalMatrix = inverse(modelViewMatrix);
+    gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, 36);
+}
+
+function handLowerLeft() {
+    modelViewMatrix = scalem(size.hand_lower[0], size.hand_lower[1], size.hand_lower[2]);
+    modelViewMatrix = mult(modelViewMatrix, translate(2 * X_OFFSET_OBJ_1 + size.hand_lower[0], 0.0, 0.0));
+    modelViewMatrix = mult(modelViewMatrix, rotate(theta.body, 1, 0, 0));
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+    var normalMatrix = inverse(modelViewMatrix);
+    gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, 36);
+}
+
+function handLowerRight() {
+    modelViewMatrix = scalem(size.hand_lower[0], size.hand_lower[1], size.hand_lower[2]);
+    modelViewMatrix = mult(modelViewMatrix, translate(X_OFFSET_OBJ_1 + 0.5 * size.hand_lower[0], 0.0, 0.0));
+    modelViewMatrix = mult(modelViewMatrix, rotate(theta.body, 1, 0, 0));
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+    var normalMatrix = inverse(modelViewMatrix);
+    gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, 36);
+}
+
+function handUpperLeft() {
+    modelViewMatrix = scalem(size.hand_upper[0], size.hand_upper[1], size.hand_upper[2]);
+    modelViewMatrix = mult(modelViewMatrix, translate(0.5 * X_OFFSET_OBJ_1, 0.0, 0.0));
+    modelViewMatrix = mult(modelViewMatrix, rotate(theta.body, 1, 0, 0));
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+    var normalMatrix = inverse(modelViewMatrix);
+    gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, 36);
+}
+
+
+function handUpperRight() {
+    modelViewMatrix = scalem(size.hand_upper[0], size.hand_upper[1], size.hand_upper[2]);
+    modelViewMatrix = mult(modelViewMatrix, translate(X_OFFSET_OBJ_1 + size.body[0], 0.0, 0.0));
+    modelViewMatrix = mult(modelViewMatrix, rotate(theta.body, 1, 0, 0));
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+    var normalMatrix = inverse(modelViewMatrix);
+    gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
     gl.drawArrays(gl.TRIANGLES, 0, 36);
 }
