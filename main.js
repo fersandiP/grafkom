@@ -2,7 +2,8 @@
 
 var canvas, gl, program;
 
-var modelViewMatrix, modelViewMatrixLoc, normalLoc;
+var modelViewMatrixLoc, normalLoc;
+var modelViewMatrix = [];
 
 var position = []
 var color = []
@@ -10,13 +11,23 @@ var normals = []
 
 
 const X_OFFSET_OBJ_1 = -3;
+var offset_hand_angle = 5;
+var offset_hand_upper_angle = 0;
+
+const STATE_HAND_LOWER_UP = 0;
+const STATE_HAND_LOWER_DOWN = 3;
+const STATE_HAND_UPPER_UP = 1;
+const STATE_HAND_UPPER_DOWN = 2;
+var hand_state = STATE_HAND_LOWER_UP;
 
 var theta = {
     "body" : 45 ,
-    "head" : 45,
-    "leg"  : 0,
+    "head" : -90,
+    "leg"  : 0 ,
     "hand_lower" : 0,
-    "hand_upper" : 0
+    "hand_upper" : 0,
+    "hat" : 0,
+    "antenna" : 0
 }
 
 var size = {
@@ -25,6 +36,9 @@ var size = {
     "leg" : [1.0, 3.0, 0.2],
     "hand_lower" : [2.0, 1.0, 0.2],
     "hand_upper" :  [1.5, 1.0, 0.2],
+    "hat" : [1, 0.5, 0.5],
+    "antenna" : [3, 0.5, 0.5],
+    "car_head":[3.0, 3.0, 3.0]
 }
 
 var vertices = [
@@ -78,7 +92,7 @@ window.onload = function init() {
     var program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
 
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearColor(0.7, 0.7, 0.7, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     gl.enable(gl.DEPTH_TEST);
@@ -124,102 +138,205 @@ function render() {
     resetModelViewMatrix()
 
     body();
-    // head();
-    // leg1();
-    // leg2();
-    //
-    // drawHand();
+    leg1();
+    leg2();
+    drawHand();
+    drawTop();
+
+    changeState();
     requestAnimationFrame(render);
 }
 
+function changeState(){
+  if (hand_state == STATE_HAND_LOWER_UP && theta.hand_lower >= 75){
+    offset_hand_angle = 0;
+    offset_hand_upper_angle = 5;
+    hand_state = STATE_HAND_UPPER_UP;
+  } else if (hand_state == STATE_HAND_UPPER_UP && theta.hand_upper >= 75){
+    offset_hand_angle = 0;
+    offset_hand_upper_angle = -5;
+    hand_state = STATE_HAND_UPPER_DOWN;
+  } else if (hand_state == STATE_HAND_UPPER_DOWN && theta.hand_upper <= -75){
+    offset_hand_angle = -5;
+    offset_hand_upper_angle = 0;
+    hand_state = STATE_HAND_LOWER_DOWN;
+  } else if (hand_state == STATE_HAND_LOWER_DOWN && theta.hand_lower <= -75){
+    offset_hand_angle = 5;
+    offset_hand_upper_angle = 0;
+    hand_state = STATE_HAND_LOWER_UP;
+  }
+}
+
 function drawHand(){
+  theta.hand_lower += offset_hand_angle;
+  theta.hand_upper += offset_hand_upper_angle;
+
   handLowerLeft();
-  handLowerRight();
   handUpperLeft();
-  // handLowerRight();
+  popMatrix();
+  handLowerRight();
+  handUpperRight();
+  popMatrix();
+}
+
+function drawTop(){
+  head();
+  hat();
+  antenna();
+  popMatrix();
 }
 
 function resetModelViewMatrix(){
-  modelViewMatrix = rotate(theta.body, 0, 1, 0);
+  modelViewMatrix = [rotate(theta.body, 0, 1, 0)];
+}
+
+function currentMatrix(){
+  return modelViewMatrix[modelViewMatrix.length-1];
+}
+
+function popMatrix(){
+  return modelViewMatrix.pop();
 }
 
 function body() {
     var s = scalem(size.body[0], size.body[1], size.body[2]);
-    var instanceMatrix = mult( translate( X_OFFSET_OBJ_1, 0, 0.0 ), s);
-    var t = mult(modelViewMatrix, instanceMatrix);
-    gl.uniformMatrix4fv(modelViewMatrixLoc,  false, flatten(t) );
-    var normalMatrix = inverse(modelViewMatrix);
-    gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
-    gl.drawArrays( gl.TRIANGLES, 0, 36 );
+    var instanceMatrix = mult( translate(0, 0, 0.0 ), s);
+    var t = mult(currentMatrix(), instanceMatrix);
+
+    draw(t);
 }
 
 function head() {
-    modelViewMatrix = scalem(size.head[0], size.head[1], size.head[2]);
-    modelViewMatrix = mult(modelViewMatrix, translate(0.65 * X_OFFSET_OBJ_1, 0.25*size.body[1], 0.0));
-    modelViewMatrix = mult(modelViewMatrix, rotate(theta.body, 0, 1, 0));
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
-    var normalMatrix = inverse(modelViewMatrix);
-    gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
-    gl.drawArrays(gl.TRIANGLES, 0, 36);
+    // theta.head += 5;
+    var newModelViewMatrix = mult(currentMatrix(), translate(0, 0.5*size.body[1], 0.0));
+    newModelViewMatrix = mult(newModelViewMatrix, rotate(theta.head, 0, 1, 0 ));
+
+    modelViewMatrix.push(newModelViewMatrix)
+
+    var s = scalem(size.head[0], size.head[1], size.head[2]);
+    var instanceMatrix = mult(currentMatrix(), translate(0.0, 0.0, 0.0));
+    instanceMatrix = mult(instanceMatrix, s)
+
+    draw(instanceMatrix);
+}
+
+function hat() {
+    var newModelViewMatrix = mult(currentMatrix(), translate(0.7*size.head[1], 0.0, 0.0));
+    newModelViewMatrix = mult(newModelViewMatrix, rotate(theta.hat, 0, 0, 1 ));
+
+    modelViewMatrix.push(newModelViewMatrix)
+
+    var s = scalem(size.hat[0], size.hat[1], size.hat[2]);
+    var instanceMatrix = mult(currentMatrix(), translate(0.0, 0.0, 0.0));
+    instanceMatrix = mult(instanceMatrix, s);
+
+    draw(instanceMatrix);
+}
+
+function antenna(){
+  theta.antenna += 5;
+  var s = scalem(size.antenna[0], size.antenna[1], size.antenna[2]);
+  var instanceMatrix = mult(currentMatrix(), translate(0.5*size.antenna[0], 0.0, 0.0));
+  instanceMatrix = mult(instanceMatrix, rotate(theta.antenna, 1, 1, 1))
+  instanceMatrix = mult(instanceMatrix, s)
+
+  draw(instanceMatrix);
 }
 
 function leg1() {
-    modelViewMatrix = scalem(size.leg[0], size.leg[1], size.leg[2]);
-    modelViewMatrix = mult(modelViewMatrix, translate(-0.3*size.body[0] + 2 * X_OFFSET_OBJ_1, -0.25*size.body[1], 0.0));
-    modelViewMatrix = mult(modelViewMatrix, rotate(theta.body, 0, 1, 0));
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
-    var normalMatrix = inverse(modelViewMatrix);
-    gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
-    gl.drawArrays(gl.TRIANGLES, 0, 36);
+    var s = scalem(size.leg[0], size.leg[1], size.leg[2]);
+    var instanceMatrix = mult(currentMatrix(), translate(-0.7*size.body[0], -0.7*size.body[1], 0.0));
+    instanceMatrix = mult(instanceMatrix, rotate(theta.leg, 0, 0, 1))
+    instanceMatrix = mult(instanceMatrix, s)
+
+    draw(instanceMatrix);
 }
 
 function leg2() {
-    modelViewMatrix = scalem(size.leg[0], size.leg[1], size.leg[2]);
-    modelViewMatrix = mult(modelViewMatrix, translate(0.3*size.body[0] + 2 * X_OFFSET_OBJ_1, -0.25*size.body[1], 0.0));
-    modelViewMatrix = mult(modelViewMatrix, rotate(theta.body, 0, 1, 0));
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
-    var normalMatrix = inverse(modelViewMatrix);
-    gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
-    gl.drawArrays(gl.TRIANGLES, 0, 36);
+    var s = scalem(size.leg[0], size.leg[1], size.leg[2]);
+    var instanceMatrix = mult(currentMatrix(), translate(0.7*size.body[0], -0.7*size.body[1], 0.0));
+    instanceMatrix = mult(instanceMatrix, rotate(theta.leg, 0, 0, 1))
+    instanceMatrix = mult(instanceMatrix, s)
+
+  draw(instanceMatrix);
 }
 
 function handLowerLeft() {
-    modelViewMatrix = scalem(size.hand_lower[0], size.hand_lower[1], size.hand_lower[2]);
-    modelViewMatrix = mult(modelViewMatrix, translate(2 * X_OFFSET_OBJ_1 + size.hand_lower[0], 0.0, 0.0));
-    modelViewMatrix = mult(modelViewMatrix, rotate(theta.body, 1, 0, 0));
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
-    var normalMatrix = inverse(modelViewMatrix);
-    gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
-    gl.drawArrays(gl.TRIANGLES, 0, 36);
+    var newModelViewMatrix = mult(currentMatrix(), translate(-size.body[0], 0.0, 0.0));
+    newModelViewMatrix = mult(newModelViewMatrix, rotate(theta.hand_lower, 0, 0, 1 ));
+
+    modelViewMatrix.push(newModelViewMatrix)
+
+    var s = scalem(size.hand_lower[0], size.hand_lower[1], size.hand_lower[2]);
+
+    var instanceMatrix = mult(currentMatrix(), translate(-0.5*size.hand_lower[0], 0.0, 0.0));
+    instanceMatrix = mult(instanceMatrix, s)
+
+    draw(instanceMatrix);
 }
 
 function handLowerRight() {
-    modelViewMatrix = scalem(size.hand_lower[0], size.hand_lower[1], size.hand_lower[2]);
-    modelViewMatrix = mult(modelViewMatrix, translate(X_OFFSET_OBJ_1 + 0.5 * size.hand_lower[0], 0.0, 0.0));
-    modelViewMatrix = mult(modelViewMatrix, rotate(theta.body, 1, 0, 0));
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
-    var normalMatrix = inverse(modelViewMatrix);
-    gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
-    gl.drawArrays(gl.TRIANGLES, 0, 36);
+    var newModelViewMatrix = mult(currentMatrix(), translate(size.body[0], 0.0, 0.0));
+    newModelViewMatrix = mult(newModelViewMatrix, rotate(theta.hand_lower, 0, 0, 1 ));
+
+    modelViewMatrix.push(newModelViewMatrix)
+
+    var s = scalem(size.hand_lower[0], size.hand_lower[1], size.hand_lower[2]);
+
+    var instanceMatrix = mult(currentMatrix(), translate(0.5*size.hand_lower[0], 0.0, 0.0));
+    instanceMatrix = mult(instanceMatrix, s)
+
+    draw(instanceMatrix);
 }
 
 function handUpperLeft() {
-    modelViewMatrix = scalem(size.hand_upper[0], size.hand_upper[1], size.hand_upper[2]);
-    modelViewMatrix = mult(modelViewMatrix, translate(0.5 * X_OFFSET_OBJ_1, 0.0, 0.0));
-    modelViewMatrix = mult(modelViewMatrix, rotate(theta.body, 1, 0, 0));
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
-    var normalMatrix = inverse(modelViewMatrix);
-    gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
-    gl.drawArrays(gl.TRIANGLES, 0, 36);
+    var s = scalem(size.hand_upper[0], size.hand_upper[1], size.hand_upper[2]);
+    var instanceMatrix = mult(currentMatrix(), translate(-2*size.hand_upper[0], 0.0, 0.0));
+    instanceMatrix = mult(instanceMatrix, rotate(theta.hand_upper, 0, 0, 1))
+    instanceMatrix = mult(instanceMatrix, s)
+
+    draw(instanceMatrix);
 }
 
 
 function handUpperRight() {
-    modelViewMatrix = scalem(size.hand_upper[0], size.hand_upper[1], size.hand_upper[2]);
-    modelViewMatrix = mult(modelViewMatrix, translate(X_OFFSET_OBJ_1 + size.body[0], 0.0, 0.0));
-    modelViewMatrix = mult(modelViewMatrix, rotate(theta.body, 1, 0, 0));
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
-    var normalMatrix = inverse(modelViewMatrix);
+    var s = scalem(size.hand_upper[0], size.hand_upper[1], size.hand_upper[2]);
+    var instanceMatrix = mult(currentMatrix(), translate(2*size.hand_upper[0], 0.0, 0.0));
+    instanceMatrix = mult(instanceMatrix, rotate(theta.hand_upper, 0, 0, 1))
+    instanceMatrix = mult(instanceMatrix, s)
+
+  draw(instanceMatrix);
+}
+
+
+function train() {
+    carHead();
+    carBody();
+
+}
+
+function carHead() {
+    var s = scalem(size.car_head[0], size.car_head[1], size.car_head[2])
+    var instanceMatrix = mult(translate(2*))
+    draw();
+}
+
+function carBody() {
+    for(var i=0;i<4;i++) {
+        carSingle(i);
+    }
+}
+
+function carSingle(x) {
+    modelViewMatrix = scalem(3, x, 3);
+    modelViewMatrix = mult(modelViewMatrix, translate(-x, 0.0, -x));
+    modelViewMatrix = mult(modelViewMatrix, rotate(0, 1, 0, 0));
+    draw();
+}
+
+function draw(matrix) {
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(matrix));
+    var normalMatrix = inverse(matrix);
     gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
     gl.drawArrays(gl.TRIANGLES, 0, 36);
 }
