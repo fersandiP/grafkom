@@ -82,6 +82,18 @@ function setCube() {
     quad(5, 4, 0, 1);
 }
 
+function initCallbackFunction(){
+    document.getElementById("sliderBody").onchange = function(event) {
+        theta.body = event.target.value;
+    };
+    document.getElementById("sliderLeg").onchange = function(event) {
+         theta.leg = event.target.value;
+    };
+    document.getElementById("sliderHead").onchange = function(event) {
+         theta.head =  event.target.value;
+    };
+}
+
 window.onload = function init() {
     canvas = document.getElementById("gl-canvas");
     gl = WebGLUtils.setupWebGL(canvas);
@@ -129,6 +141,7 @@ window.onload = function init() {
     var projectionMatrixLoc = gl.getUniformLocation(program, "projectionMatrix")
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
 
+    initCallbackFunction();
     render();
 
 }
@@ -143,6 +156,7 @@ function render() {
     drawHand();
     drawTop();
 
+    train();
     changeState();
     requestAnimationFrame(render);
 }
@@ -183,6 +197,7 @@ function drawTop(){
   head();
   hat();
   antenna();
+  popMatrix();
   popMatrix();
 }
 
@@ -311,14 +326,15 @@ function handUpperRight() {
 
 function train() {
     carHead();
-    carBody();
+    //carBody();
 
 }
 
 function carHead() {
     var s = scalem(size.car_head[0], size.car_head[1], size.car_head[2])
-    var instanceMatrix = mult(translate(2*))
-    draw();
+    var instanceMatrix = mult(s, translate(0, -3, 0.0))
+    instanceMatrix = mult(instanceMatrix, rotate(20, 0, 1, 0))
+    draw(instanceMatrix);
 }
 
 function carBody() {
