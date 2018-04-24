@@ -9,8 +9,6 @@ var position = []
 var color = []
 var normals = []
 
-
-const X_OFFSET_OBJ_1 = -3;
 var offset_hand_angle = 5;
 var offset_hand_upper_angle = 0;
 
@@ -27,7 +25,9 @@ var theta = {
     "hand_lower" : 0,
     "hand_upper" : 0,
     "hat" : 0,
-    "antenna" : 0
+    "antenna" : 0,
+    "train": 0,
+    "train_body" : [0,0,0,0,0,0,0,0]
 }
 
 var size = {
@@ -38,7 +38,13 @@ var size = {
     "hand_upper" :  [1.5, 1.0, 0.2],
     "hat" : [1, 0.5, 0.5],
     "antenna" : [3, 0.5, 0.5],
-    "car_head":[3.0, 3.0, 3.0]
+    "car_head":[3.0, 3.0, 3.0],
+    "car_body": [2.0, 2.0, 2.0],
+    "car_tail": [1.0, 1.0, 1.0]
+}
+
+var pos = {
+    "car_head":[2.5, -2.5, 0.0]
 }
 
 var vertices = [
@@ -71,6 +77,21 @@ function quad(a, b, c, d) {
     normals.push(normal);
     position.push(vertices[d]);
     normals.push(normal);
+}
+
+function setBall(gl, r, x, y){
+  var center = vec2(x, y);
+
+  position.push(center);
+  for (var i = 0; i <= 100; i++){
+    position.push(vec4(
+        r*Math.cos(2*Math.PI*i/100.0) + x,
+        r*Math.sin(2*Math.PI*i/100.0) + y,
+        1,
+        1
+    ));
+
+    }
 }
 
 function setCube() {
@@ -155,6 +176,7 @@ function render() {
     leg2();
     drawHand();
     drawTop();
+    popMatrix();
 
     train();
     changeState();
@@ -209,6 +231,7 @@ function currentMatrix(){
   return modelViewMatrix[modelViewMatrix.length-1];
 }
 
+//Change modelViewMatrix state
 function popMatrix(){
   return modelViewMatrix.pop();
 }
@@ -222,7 +245,6 @@ function body() {
 }
 
 function head() {
-    // theta.head += 5;
     var newModelViewMatrix = mult(currentMatrix(), translate(0, 0.5*size.body[1], 0.0));
     newModelViewMatrix = mult(newModelViewMatrix, rotate(theta.head, 0, 1, 0 ));
 
@@ -325,30 +347,48 @@ function handUpperRight() {
 
 
 function train() {
+    theta.train++;
     carHead();
-    //carBody();
+    carBody();
 
 }
 
 function carHead() {
-    var s = scalem(size.car_head[0], size.car_head[1], size.car_head[2])
-    var instanceMatrix = mult(s, translate(0, -3, 0.0))
-    instanceMatrix = mult(instanceMatrix, rotate(20, 0, 1, 0))
+    modelViewMatrix = [translate(pos.car_head[0], pos.car_head[1], 0.0)];
+    var s = scalem(size.car_head[0], size.car_head[1], size.car_head[2]);
+    var instanceMatrix = mult(s, currentMatrix());
+    instanceMatrix = mult(instanceMatrix, rotate(theta.train, 1, 0, 0));
     draw(instanceMatrix);
 }
 
 function carBody() {
-    for(var i=0;i<4;i++) {
+    for(var i=0;i<8;i++) {
         carSingle(i);
     }
 }
 
 function carSingle(x) {
-    modelViewMatrix = scalem(3, x, 3);
-    modelViewMatrix = mult(modelViewMatrix, translate(-x, 0.0, -x));
-    modelViewMatrix = mult(modelViewMatrix, rotate(0, 1, 0, 0));
-    draw();
+    if (x == 0){
+      var newModelViewMatrix = mult(currentMatrix(), translate(pos.car_head[0], pos.car_head[1]-2.5, 0.0));
+    } else if (x == 7){
+      var newModelViewMatrix = mult(currentMatrix(), translate(-1.5, 0 , 0.0));
+    } else {
+      var newModelViewMatrix = mult(currentMatrix(), translate(-2, 0 , 0.0));
+    }
+    newModelViewMatrix = mult(newModelViewMatrix, rotate(theta.train_body[x], 0,0,1));
+
+    modelViewMatrix.push(newModelViewMatrix);
+
+    if (x == 7){
+      var s = scalem(size.car_tail[0], size.car_tail[1], size.car_tail[2]);
+    } else {
+      var s = scalem(size.car_body[0], size.car_body[1], size.car_body[2]);
+    }
+    var instanceMatrix = mult(currentMatrix(), rotate(theta.train+x*20, 1, 0, 0));
+    instanceMatrix = mult(instanceMatrix, s);
+    draw(instanceMatrix);
 }
+
 
 function draw(matrix) {
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(matrix));
