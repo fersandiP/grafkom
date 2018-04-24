@@ -47,6 +47,8 @@ var pos = {
     "car_head":[2.5, -2.5, 0.0]
 }
 
+var trainSlider = ["slider1", "slider2", "slider3", "slider4", "slider5", "slider6", "slider7", "slider8"]
+
 var vertices = [
     vec4(-0.5, -0.5, 0.5, 1.0),
     vec4(-0.5, 0.5, 0.5, 1.0),
@@ -113,6 +115,12 @@ function initCallbackFunction(){
     document.getElementById("sliderHead").onchange = function(event) {
          theta.head =  event.target.value;
     };
+
+    for(var i=0;i<8;i++) (function(i){
+      document.getElementById(trainSlider[i]).onchange = function(event) {
+        theta.train_body[i] = event.target.value;
+      }
+    })(i);
 }
 
 window.onload = function init() {
