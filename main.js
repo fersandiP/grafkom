@@ -2,7 +2,7 @@
 
 var canvas, gl, program;
 
-var modelViewMatrixLoc, normalLoc;
+var modelViewMatrixLoc;
 var modelViewMatrix = [];
 
 var position = []
@@ -18,33 +18,37 @@ const STATE_HAND_UPPER_UP = 1;
 const STATE_HAND_UPPER_DOWN = 2;
 var hand_state = STATE_HAND_LOWER_UP;
 
+var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0);
+var lightDiffuse = vec4(1.0, 1.0, 1.0, 1.0);
+var lightSpecular = vec4(1.0, 1.0, 1.0, 1.0);
+
 var theta = {
-    "body" : 45 ,
-    "head" : -90,
-    "leg"  : 0 ,
-    "hand_lower" : 0,
-    "hand_upper" : 0,
-    "hat" : 0,
-    "antenna" : 0,
+    "body": 45,
+    "head": -90,
+    "leg": 0,
+    "hand_lower": 0,
+    "hand_upper": 0,
+    "hat": 0,
+    "antenna": 0,
     "train": 0,
-    "train_body" : [0,0,0,0,0,0,0,0]
+    "train_body": [0, 0, 0, 0, 0, 0, 0, 0]
 }
 
 var size = {
     "body": [2.0, 5.0, 2.0],
     "head": [3.0, 3.0, 3.0],
-    "leg" : [1.0, 3.0, 0.2],
-    "hand_lower" : [2.0, 1.0, 0.2],
-    "hand_upper" :  [1.5, 1.0, 0.2],
-    "hat" : [1, 0.5, 0.5],
-    "antenna" : [3, 0.5, 0.5],
-    "car_head":[3.0, 3.0, 3.0],
+    "leg": [1.0, 3.0, 0.2],
+    "hand_lower": [2.0, 1.0, 0.2],
+    "hand_upper": [1.5, 1.0, 0.2],
+    "hat": [1, 0.5, 0.5],
+    "antenna": [3, 0.5, 0.5],
+    "car_head": [3.0, 3.0, 3.0],
     "car_body": [2.0, 2.0, 2.0],
     "car_tail": [1.0, 1.0, 1.0]
 }
 
 var pos = {
-    "car_head":[2.5, -2.5, 0.0]
+    "car_head": [2.5, -2.5, 0.0]
 }
 
 var trainSlider = ["slider1", "slider2", "slider3", "slider4", "slider5", "slider6", "slider7", "slider8"]
@@ -59,6 +63,33 @@ var vertices = [
     vec4(0.5, 0.5, -0.5, 1.0),
     vec4(0.5, -0.5, -0.5, 1.0)
 ];
+
+var materialOption = {
+    "gold": {
+        "ambient": vec4(0.24725, 0.1995, 0.0745, 1.0),
+        "diffuse": vec4(0.75164, 0.60648, 0.22648, 1.0),
+        "specular": vec4(0.628281, 0.555802, 0.366065, 1.0),
+        "shine": 51.2
+    },
+    "emerald": {
+        "diffuse": vec4(0.0215, 0.1745, 0.0215, 0.55),
+        "ambient": vec4(0.07568, 0.61424, 0.07568, 0.55),
+        "specular": vec4(0.633, 0.727811, 0.633, 0.55),
+        "shine": 76.8
+    },
+    "obsidian": {
+        "ambient": vec4(0.05375, 0.05, 0.06625, 0.82),
+        "diffuse": vec4(0.18275, 0.17, 0.22525, 0.82),
+        "specular": vec4(0.332741, 0.328634, 0.346435, 0.82),
+        "shine": 38.4
+    },
+    "perl": {
+        "ambient": vec4(0.25, 0.20725, 0.20725, 0.922),
+        "diffuse": vec4(1.0, 0.829, 0.829, 0.922),
+        "specular": vec4(0.296648, 0.296648, 0.296648, 0.922),
+        "shine": 12.264
+    }
+}
 
 
 function quad(a, b, c, d) {
@@ -81,17 +112,17 @@ function quad(a, b, c, d) {
     normals.push(normal);
 }
 
-function setBall(gl, r, x, y){
-  var center = vec2(x, y);
+function setBall(gl, r, x, y) {
+    var center = vec2(x, y);
 
-  position.push(center);
-  for (var i = 0; i <= 100; i++){
-    position.push(vec4(
-        r*Math.cos(2*Math.PI*i/100.0) + x,
-        r*Math.sin(2*Math.PI*i/100.0) + y,
-        1,
-        1
-    ));
+    position.push(center);
+    for (var i = 0; i <= 100; i++) {
+        position.push(vec4(
+            r * Math.cos(2 * Math.PI * i / 100.0) + x,
+            r * Math.sin(2 * Math.PI * i / 100.0) + y,
+            1,
+            1
+        ));
 
     }
 }
@@ -105,21 +136,25 @@ function setCube() {
     quad(5, 4, 0, 1);
 }
 
-function initCallbackFunction(){
-    document.getElementById("sliderBody").onchange = function(event) {
+function initCallbackFunction() {
+    document.getElementById("sliderBody").onchange = function (event) {
         theta.body = event.target.value;
     };
-    document.getElementById("sliderLeg").onchange = function(event) {
-         theta.leg = event.target.value;
+    document.getElementById("sliderLeg").onchange = function (event) {
+        theta.leg = event.target.value;
     };
-    document.getElementById("sliderHead").onchange = function(event) {
-         theta.head =  event.target.value;
+    document.getElementById("sliderHead").onchange = function (event) {
+        theta.head = event.target.value;
     };
 
-    for(var i=0;i<8;i++) (function(i){
-      document.getElementById(trainSlider[i]).onchange = function(event) {
-        theta.train_body[i] = event.target.value;
-      }
+    document.getElementById("materialSelector").onchange = function(ev){
+        setMaterial(materialOption[ev.target.value]);
+    }
+
+    for (var i = 0; i < 8; i++) (function (i) {
+        document.getElementById(trainSlider[i]).onchange = function (event) {
+            theta.train_body[i] = event.target.value;
+        }
     })(i);
 }
 
@@ -130,7 +165,7 @@ window.onload = function init() {
 
     gl.viewport(0, 0, canvas.width, canvas.height);
 
-    var program = initShaders(gl, "vertex-shader", "fragment-shader");
+    program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
 
     gl.clearColor(0.7, 0.7, 0.7, 1.0);
@@ -158,9 +193,6 @@ window.onload = function init() {
     gl.vertexAttribPointer(vNormal, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vNormal);
 
-    //Get Normal Matrix Location
-    normalLoc = gl.getUniformLocation(program, "normalMatrix");
-
     //Get Model View Matrix Location
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
 
@@ -169,6 +201,14 @@ window.onload = function init() {
     var projectionMatrix = ortho(-10, 10, -10, 10, -10, 10);
     var projectionMatrixLoc = gl.getUniformLocation(program, "projectionMatrix")
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
+
+
+    //Set light position
+    var lightPositionLocation = gl.getUniformLocation(program, 'lightPosition');
+    var lightPos = vec4(0.5, 0.5, 0.5, 0.0);
+    gl.uniform4fv(lightPositionLocation, flatten(lightPos));
+
+    setMaterial(materialOption["gold"]);
 
     initCallbackFunction();
     render();
@@ -191,70 +231,70 @@ function render() {
     requestAnimationFrame(render);
 }
 
-function changeState(){
-  if (hand_state == STATE_HAND_LOWER_UP && theta.hand_lower >= 75){
-    offset_hand_angle = 0;
-    offset_hand_upper_angle = 5;
-    hand_state = STATE_HAND_UPPER_UP;
-  } else if (hand_state == STATE_HAND_UPPER_UP && theta.hand_upper >= 75){
-    offset_hand_angle = 0;
-    offset_hand_upper_angle = -5;
-    hand_state = STATE_HAND_UPPER_DOWN;
-  } else if (hand_state == STATE_HAND_UPPER_DOWN && theta.hand_upper <= -75){
-    offset_hand_angle = -5;
-    offset_hand_upper_angle = 0;
-    hand_state = STATE_HAND_LOWER_DOWN;
-  } else if (hand_state == STATE_HAND_LOWER_DOWN && theta.hand_lower <= -75){
-    offset_hand_angle = 5;
-    offset_hand_upper_angle = 0;
-    hand_state = STATE_HAND_LOWER_UP;
-  }
+function changeState() {
+    if (hand_state == STATE_HAND_LOWER_UP && theta.hand_lower >= 75) {
+        offset_hand_angle = 0;
+        offset_hand_upper_angle = 5;
+        hand_state = STATE_HAND_UPPER_UP;
+    } else if (hand_state == STATE_HAND_UPPER_UP && theta.hand_upper >= 75) {
+        offset_hand_angle = 0;
+        offset_hand_upper_angle = -5;
+        hand_state = STATE_HAND_UPPER_DOWN;
+    } else if (hand_state == STATE_HAND_UPPER_DOWN && theta.hand_upper <= -75) {
+        offset_hand_angle = -5;
+        offset_hand_upper_angle = 0;
+        hand_state = STATE_HAND_LOWER_DOWN;
+    } else if (hand_state == STATE_HAND_LOWER_DOWN && theta.hand_lower <= -75) {
+        offset_hand_angle = 5;
+        offset_hand_upper_angle = 0;
+        hand_state = STATE_HAND_LOWER_UP;
+    }
 }
 
-function drawHand(){
-  theta.hand_lower += offset_hand_angle;
-  theta.hand_upper += offset_hand_upper_angle;
+function drawHand() {
+    theta.hand_lower += offset_hand_angle;
+    theta.hand_upper += offset_hand_upper_angle;
 
-  handLowerLeft();
-  handUpperLeft();
-  popMatrix();
-  handLowerRight();
-  handUpperRight();
-  popMatrix();
+    handLowerLeft();
+    handUpperLeft();
+    popMatrix();
+    handLowerRight();
+    handUpperRight();
+    popMatrix();
 }
 
-function drawTop(){
-  head();
-  hat();
-  antenna();
-  popMatrix();
-  popMatrix();
+function drawTop() {
+    head();
+    hat();
+    antenna();
+    popMatrix();
+    popMatrix();
 }
 
-function resetModelViewMatrix(){
-  modelViewMatrix = [rotate(theta.body, 0, 1, 0)];
+function resetModelViewMatrix() {
+    modelViewMatrix = [rotate(theta.body, 0, 1, 0)];
 }
 
-function currentMatrix(){
-  return modelViewMatrix[modelViewMatrix.length-1];
+function currentMatrix() {
+    return modelViewMatrix[modelViewMatrix.length - 1];
 }
 
 //Change modelViewMatrix state
-function popMatrix(){
-  return modelViewMatrix.pop();
+function popMatrix() {
+    return modelViewMatrix.pop();
 }
 
 function body() {
     var s = scalem(size.body[0], size.body[1], size.body[2]);
-    var instanceMatrix = mult( translate(0, 0, 0.0 ), s);
+    var instanceMatrix = mult(translate(0, 0, 0.0), s);
     var t = mult(currentMatrix(), instanceMatrix);
 
     draw(t);
 }
 
 function head() {
-    var newModelViewMatrix = mult(currentMatrix(), translate(0, 0.5*size.body[1], 0.0));
-    newModelViewMatrix = mult(newModelViewMatrix, rotate(theta.head, 0, 1, 0 ));
+    var newModelViewMatrix = mult(currentMatrix(), translate(0, 0.5 * size.body[1], 0.0));
+    newModelViewMatrix = mult(newModelViewMatrix, rotate(theta.head, 0, 1, 0));
 
     modelViewMatrix.push(newModelViewMatrix)
 
@@ -266,8 +306,8 @@ function head() {
 }
 
 function hat() {
-    var newModelViewMatrix = mult(currentMatrix(), translate(0.7*size.head[1], 0.0, 0.0));
-    newModelViewMatrix = mult(newModelViewMatrix, rotate(theta.hat, 0, 0, 1 ));
+    var newModelViewMatrix = mult(currentMatrix(), translate(0.7 * size.head[1], 0.0, 0.0));
+    newModelViewMatrix = mult(newModelViewMatrix, rotate(theta.hat, 0, 0, 1));
 
     modelViewMatrix.push(newModelViewMatrix)
 
@@ -278,19 +318,19 @@ function hat() {
     draw(instanceMatrix);
 }
 
-function antenna(){
-  theta.antenna += 5;
-  var s = scalem(size.antenna[0], size.antenna[1], size.antenna[2]);
-  var instanceMatrix = mult(currentMatrix(), translate(0.5*size.antenna[0], 0.0, 0.0));
-  instanceMatrix = mult(instanceMatrix, rotate(theta.antenna, 1, 1, 1))
-  instanceMatrix = mult(instanceMatrix, s)
+function antenna() {
+    theta.antenna += 5;
+    var s = scalem(size.antenna[0], size.antenna[1], size.antenna[2]);
+    var instanceMatrix = mult(currentMatrix(), translate(0.5 * size.antenna[0], 0.0, 0.0));
+    instanceMatrix = mult(instanceMatrix, rotate(theta.antenna, 1, 1, 1))
+    instanceMatrix = mult(instanceMatrix, s)
 
-  draw(instanceMatrix);
+    draw(instanceMatrix);
 }
 
 function leg1() {
     var s = scalem(size.leg[0], size.leg[1], size.leg[2]);
-    var instanceMatrix = mult(currentMatrix(), translate(-0.7*size.body[0], -0.7*size.body[1], 0.0));
+    var instanceMatrix = mult(currentMatrix(), translate(-0.7 * size.body[0], -0.7 * size.body[1], 0.0));
     instanceMatrix = mult(instanceMatrix, rotate(theta.leg, 0, 0, 1))
     instanceMatrix = mult(instanceMatrix, s)
 
@@ -299,22 +339,22 @@ function leg1() {
 
 function leg2() {
     var s = scalem(size.leg[0], size.leg[1], size.leg[2]);
-    var instanceMatrix = mult(currentMatrix(), translate(0.7*size.body[0], -0.7*size.body[1], 0.0));
+    var instanceMatrix = mult(currentMatrix(), translate(0.7 * size.body[0], -0.7 * size.body[1], 0.0));
     instanceMatrix = mult(instanceMatrix, rotate(theta.leg, 0, 0, 1))
     instanceMatrix = mult(instanceMatrix, s)
 
-  draw(instanceMatrix);
+    draw(instanceMatrix);
 }
 
 function handLowerLeft() {
     var newModelViewMatrix = mult(currentMatrix(), translate(-size.body[0], 0.0, 0.0));
-    newModelViewMatrix = mult(newModelViewMatrix, rotate(theta.hand_lower, 0, 0, 1 ));
+    newModelViewMatrix = mult(newModelViewMatrix, rotate(theta.hand_lower, 0, 0, 1));
 
     modelViewMatrix.push(newModelViewMatrix)
 
     var s = scalem(size.hand_lower[0], size.hand_lower[1], size.hand_lower[2]);
 
-    var instanceMatrix = mult(currentMatrix(), translate(-0.5*size.hand_lower[0], 0.0, 0.0));
+    var instanceMatrix = mult(currentMatrix(), translate(-0.5 * size.hand_lower[0], 0.0, 0.0));
     instanceMatrix = mult(instanceMatrix, s)
 
     draw(instanceMatrix);
@@ -322,13 +362,13 @@ function handLowerLeft() {
 
 function handLowerRight() {
     var newModelViewMatrix = mult(currentMatrix(), translate(size.body[0], 0.0, 0.0));
-    newModelViewMatrix = mult(newModelViewMatrix, rotate(theta.hand_lower, 0, 0, 1 ));
+    newModelViewMatrix = mult(newModelViewMatrix, rotate(theta.hand_lower, 0, 0, 1));
 
     modelViewMatrix.push(newModelViewMatrix)
 
     var s = scalem(size.hand_lower[0], size.hand_lower[1], size.hand_lower[2]);
 
-    var instanceMatrix = mult(currentMatrix(), translate(0.5*size.hand_lower[0], 0.0, 0.0));
+    var instanceMatrix = mult(currentMatrix(), translate(0.5 * size.hand_lower[0], 0.0, 0.0));
     instanceMatrix = mult(instanceMatrix, s)
 
     draw(instanceMatrix);
@@ -336,7 +376,7 @@ function handLowerRight() {
 
 function handUpperLeft() {
     var s = scalem(size.hand_upper[0], size.hand_upper[1], size.hand_upper[2]);
-    var instanceMatrix = mult(currentMatrix(), translate(-2*size.hand_upper[0], 0.0, 0.0));
+    var instanceMatrix = mult(currentMatrix(), translate(-2 * size.hand_upper[0], 0.0, 0.0));
     instanceMatrix = mult(instanceMatrix, rotate(theta.hand_upper, 0, 0, 1))
     instanceMatrix = mult(instanceMatrix, s)
 
@@ -346,11 +386,11 @@ function handUpperLeft() {
 
 function handUpperRight() {
     var s = scalem(size.hand_upper[0], size.hand_upper[1], size.hand_upper[2]);
-    var instanceMatrix = mult(currentMatrix(), translate(2*size.hand_upper[0], 0.0, 0.0));
+    var instanceMatrix = mult(currentMatrix(), translate(2 * size.hand_upper[0], 0.0, 0.0));
     instanceMatrix = mult(instanceMatrix, rotate(theta.hand_upper, 0, 0, 1))
     instanceMatrix = mult(instanceMatrix, s)
 
-  draw(instanceMatrix);
+    draw(instanceMatrix);
 }
 
 
@@ -370,29 +410,29 @@ function carHead() {
 }
 
 function carBody() {
-    for(var i=0;i<8;i++) {
+    for (var i = 0; i < 8; i++) {
         carSingle(i);
     }
 }
 
 function carSingle(x) {
-    if (x == 0){
-      var newModelViewMatrix = mult(currentMatrix(), translate(pos.car_head[0], pos.car_head[1]-2.5, 0.0));
-    } else if (x == 7){
-      var newModelViewMatrix = mult(currentMatrix(), translate(-1.5, 0 , 0.0));
+    if (x == 0) {
+        var newModelViewMatrix = mult(currentMatrix(), translate(pos.car_head[0], pos.car_head[1] - 2.5, 0.0));
+    } else if (x == 7) {
+        var newModelViewMatrix = mult(currentMatrix(), translate(-1.5, 0, 0.0));
     } else {
-      var newModelViewMatrix = mult(currentMatrix(), translate(-2, 0 , 0.0));
+        var newModelViewMatrix = mult(currentMatrix(), translate(-2, 0, 0.0));
     }
-    newModelViewMatrix = mult(newModelViewMatrix, rotate(theta.train_body[x], 0,0,1));
+    newModelViewMatrix = mult(newModelViewMatrix, rotate(theta.train_body[x], 0, 0, 1));
 
     modelViewMatrix.push(newModelViewMatrix);
 
-    if (x == 7){
-      var s = scalem(size.car_tail[0], size.car_tail[1], size.car_tail[2]);
+    if (x == 7) {
+        var s = scalem(size.car_tail[0], size.car_tail[1], size.car_tail[2]);
     } else {
-      var s = scalem(size.car_body[0], size.car_body[1], size.car_body[2]);
+        var s = scalem(size.car_body[0], size.car_body[1], size.car_body[2]);
     }
-    var instanceMatrix = mult(currentMatrix(), rotate(theta.train+x*20, 1, 0, 0));
+    var instanceMatrix = mult(currentMatrix(), rotate(theta.train + x * 20, 1, 0, 0));
     instanceMatrix = mult(instanceMatrix, s);
     draw(instanceMatrix);
 }
@@ -400,7 +440,22 @@ function carSingle(x) {
 
 function draw(matrix) {
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(matrix));
-    var normalMatrix = inverse(matrix);
-    gl.uniformMatrix4fv(normalLoc, false, flatten(normalMatrix));
     gl.drawArrays(gl.TRIANGLES, 0, 36);
+}
+
+function setMaterial(opt) {
+	//console.log(opt);
+	var ambientProduct = mult(lightAmbient, opt["ambient"]);
+    var diffuseProduct = mult(lightDiffuse, opt["diffuse"]);
+    var specularProduct = mult(lightSpecular, opt["specular"]);
+	
+	gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"),
+       flatten(ambientProduct));
+    gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"),
+       flatten(diffuseProduct) );
+    gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"),
+       flatten(specularProduct) );
+	   
+	gl.uniform1f(gl.getUniformLocation(program,
+       "shininess"),opt["shine"]);
 }

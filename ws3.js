@@ -53,7 +53,6 @@ function main() {
     //Set light position
     var lightPositionLocation = gl.getUniformLocation(program, 'lightPosition');
     var lightPos = new Vector4([0.5, 0.5, 0.5, 0.0]);
-    console.log(lightPos.elements);
     gl.uniform4fv(lightPositionLocation, lightPos.elements);
 
     setMaterial(gl, materialOption["gold"]);
