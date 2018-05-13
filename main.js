@@ -25,6 +25,7 @@ var lightSpecular = vec4(1.0, 1.0, 1.0, 1.0);
 var light;
 var mShadow;
 var shadowColorLoc;
+var activeTextureLoc;
 var lightingLoc;
 var isLighting = true;
 
@@ -86,6 +87,7 @@ function configureTexture(image, n) {
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,
         gl.NEAREST_MIPMAP_LINEAR );
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+    activeTextureLoc = gl.getUniformLocation(program, "activeTexture");
 }
 
 ////////////////////TEXTURE///////////////////////////
@@ -382,7 +384,9 @@ function render() {
     texturei = 0;
 
     lightBulb();
+    gl.uniform1i(activeTextureLoc, 1);
     body();
+    gl.uniform1i(activeTextureLoc, 0);
     leg1();
     leg2();
     drawHand();
