@@ -25,6 +25,7 @@ var lightSpecular = vec4(1.0, 1.0, 1.0, 1.0);
 var light;
 var mShadow;
 var shadowColorLoc;
+var lightingLoc;
 var isLighting = true;
 
 var va = vec4(0.0, 0.0, -1.0,1);
@@ -223,8 +224,10 @@ function initCallbackFunction() {
     document.getElementById("toogleLighting").onchange = function (event) {
     	if (this.checked){
     		isLighting = true;
+    		gl.uniform1f(lightingLoc, 1.0);
     	} else {
     		isLighting = false;
+    		gl.uniform1f(lightingLoc, 0.1);
     	}
     }
 
@@ -295,6 +298,9 @@ window.onload = function init() {
     var lightPos = vec4(1.0, 1.0, 0.0, 0.0);
     gl.uniform4fv(lightPositionLocation, flatten(lightPos));
 
+    lightingLoc = gl.getUniformLocation(program, 'lighting');
+    gl.uniform1f(lightingLoc, 1.0);
+
     setMaterial(materialOption["gold"]);
 
     initCallbackFunction();
@@ -320,6 +326,7 @@ function render() {
 }
 
 function lightBulb() {
+	if (!isLighting) return;
     var matrix = translate(8.0, 7.5, 0.0);
     drawSphere(matrix);
 }
@@ -544,7 +551,7 @@ function draw(matrix) {
     // shadowMatrix = mult(shadowMatrix, mShadow);
     // shadowMatrix = mult(shadowMatrix, translate(-light[0], -light[1], -light[2]));
 
-    var shadowMatrix = mult(translate(-3, -3., 0), matrix);	
+    var shadowMatrix = mult(translate(-3, -3., -5), matrix);	
 
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(shadowMatrix));
     gl.uniform1i(shadowColorLoc, 1);

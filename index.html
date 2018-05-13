@@ -21,6 +21,7 @@
     uniform float shininess;
     uniform int isShadow;
     uniform int isSphere;
+    uniform float lighting;
 
     void main()
     {
@@ -58,7 +59,7 @@
         if (isShadow == 1){
         	fColor = vec4(0,0,0,1);
         } else {
-	        fColor = ambient + diffuse +specular;
+	        fColor = lighting * (ambient + diffuse +specular);
 	        
 	        fColor.a = 1.0;
         }
