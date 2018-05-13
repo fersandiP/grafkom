@@ -25,6 +25,16 @@ var lightSpecular = vec4(1.0, 1.0, 1.0, 1.0);
 var light;
 var mShadow;
 var shadowColorLoc;
+var va = vec4(0.0, 0.0, -1.0,1);
+var vb = vec4(0.0, 0.942809, 0.333333, 1);
+var vc = vec4(-0.816497, -0.471405, 0.333333, 1);
+var vd = vec4(0.816497, -0.471405, 0.333333,1);
+var numTimesToSubdivide = 5;
+var index = 0;
+
+var eye;
+var at = vec3(0.0, 0.0, 0.0);
+var up = vec3(0.0, 1.0, 0.0);
 
 var theta = {
     "body": 45,
@@ -95,6 +105,47 @@ var materialOption = {
     }
 }
 
+function triangle(a, b, c) {
+    position.push(a);
+    position.push(b);
+    position.push(c);
+
+    // normals are vectors
+
+    normals.push(a[0],a[1], a[2]);
+    normals.push(b[0],b[1], b[2]);
+    normals.push(c[0],c[1], c[2]);
+
+    index += 3;
+}
+
+function divideTriangle(a, b, c, count) {
+    if ( count > 0 ) {
+
+        var ab = mix( a, b, 0.5);
+        var ac = mix( a, c, 0.5);
+        var bc = mix( b, c, 0.5);
+
+        ab = normalize(ab, true);
+        ac = normalize(ac, true);
+        bc = normalize(bc, true);
+
+        divideTriangle( a, ab, ac, count - 1 );
+        divideTriangle( ab, b, bc, count - 1 );
+        divideTriangle( bc, c, ac, count - 1 );
+        divideTriangle( ab, bc, ac, count - 1 );
+    }
+    else {
+        triangle( a, b, c );
+    }
+}
+
+function tetrahedron(a, b, c, d, n) {
+    divideTriangle(a, b, c, n);
+    divideTriangle(d, c, b, n);
+    divideTriangle(a, d, b, n);
+    divideTriangle(a, c, d, n);
+}
 
 function quad(a, b, c, d) {
     var t1 = subtract(vertices[b], vertices[a]);
@@ -141,6 +192,18 @@ function setCube() {
 }
 
 function initCallbackFunction() {
+    document.onkeydown = function (ev) {
+        switch (ev.keyCode) {
+            case 39: // Right arrow key -> the positive rotation of arm1 around the y-axis
+                theta.body = (theta.body + 5) % 360;
+                break;
+            case 37: // Left arrow key -> the negative rotation of arm1 around the y-axis
+                theta.body = (theta.body - 5) % 360;
+                break;
+            default: return;
+        }
+
+    }
     document.getElementById("sliderBody").onchange = function (event) {
         theta.body = event.target.value;
     };
@@ -151,7 +214,7 @@ function initCallbackFunction() {
         theta.head = event.target.value;
     };
 
-    document.getElementById("materialSelector").onchange = function(ev){
+    document.getElementById("materialSelector").onchange = function (ev) {
         setMaterial(materialOption[ev.target.value]);
     }
 
@@ -187,6 +250,7 @@ window.onload = function init() {
     gl.enable(gl.DEPTH_TEST);
 
     setCube();
+    tetrahedron(va, vb, vc, vd, numTimesToSubdivide);
 
     //Insert position to vertex shader
     var positionBuffer = gl.createBuffer();
@@ -218,7 +282,7 @@ window.onload = function init() {
 
     //Set light position
     var lightPositionLocation = gl.getUniformLocation(program, 'lightPosition');
-    var lightPos = vec4(0.5, 0.5, 0.5, 0.0);
+    var lightPos = vec4(1.0, 1.0, 1.0, 0.0);
     gl.uniform4fv(lightPositionLocation, flatten(lightPos));
 
     setMaterial(materialOption["gold"]);
@@ -232,6 +296,7 @@ function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     resetModelViewMatrix()
 
+    lightBulb();
     body();
     leg1();
     leg2();
@@ -242,6 +307,11 @@ function render() {
     train();
     changeState();
     requestAnimationFrame(render);
+}
+
+function lightBulb() {
+    var matrix = translate(6, 5, -0.5);
+    drawSphere(matrix);
 }
 
 function changeState() {
@@ -466,19 +536,26 @@ function draw(matrix) {
 
 }
 
+function drawSphere(matrix) {
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(matrix));
+    for( var i=0; i<index; i+=3)
+        gl.drawArrays( gl.TRIANGLES, 36+i, 3 )
+
+}
+
 function setMaterial(opt) {
-	//console.log(opt);
-	var ambientProduct = mult(lightAmbient, opt["ambient"]);
+    //console.log(opt);
+    var ambientProduct = mult(lightAmbient, opt["ambient"]);
     var diffuseProduct = mult(lightDiffuse, opt["diffuse"]);
     var specularProduct = mult(lightSpecular, opt["specular"]);
-	
-	gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"),
-       flatten(ambientProduct));
+
+    gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"),
+        flatten(ambientProduct));
     gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"),
-       flatten(diffuseProduct) );
+        flatten(diffuseProduct));
     gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"),
-       flatten(specularProduct) );
-	   
-	gl.uniform1f(gl.getUniformLocation(program,
-       "shininess"),opt["shine"]);
+        flatten(specularProduct));
+
+    gl.uniform1f(gl.getUniformLocation(program,
+        "shininess"), opt["shine"]);
 }
