@@ -540,9 +540,11 @@ function draw(matrix) {
     	return;
     }
 
-    var shadowMatrix = mult(matrix, translate(light[0], light[1], light[2]));
-    shadowMatrix = mult(shadowMatrix, mShadow);
-    shadowMatrix = mult(shadowMatrix, translate(-light[0], -light[1], -light[2]));
+    // var shadowMatrix = mult(matrix, translate(light[0], light[1], light[2]));
+    // shadowMatrix = mult(shadowMatrix, mShadow);
+    // shadowMatrix = mult(shadowMatrix, translate(-light[0], -light[1], -light[2]));
+
+    var shadowMatrix = mult(translate(-3, -3., 0), matrix);	
 
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(shadowMatrix));
     gl.uniform1i(shadowColorLoc, 1);
