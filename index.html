@@ -81,10 +81,15 @@
     varying  vec4 fColor;
     varying  vec2 fTexCoord;
     uniform sampler2D texture;
+    uniform int activeTexture;
 
     void main()
-    {
-        	gl_FragColor = fColor*texture2D( texture, fTexCoord );;
+    {       if(activeTexture == 1){
+                gl_FragColor = fColor*texture2D( texture, fTexCoord );
+            } else {
+                gl_FragColor = fColor;
+            }
+        	
     }
 </script>
 <script type="text/javascript" src="Common/webgl-utils.js"></script>
