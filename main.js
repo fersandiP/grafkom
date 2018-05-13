@@ -28,10 +28,10 @@ var shadowColorLoc;
 var lightingLoc;
 var isLighting = true;
 
-var va = vec4(0.0, 0.0, -1.0,1);
+var va = vec4(0.0, 0.0, -1.0, 1);
 var vb = vec4(0.0, 0.942809, 0.333333, 1);
 var vc = vec4(-0.816497, -0.471405, 0.333333, 1);
-var vd = vec4(0.816497, -0.471405, 0.333333,1);
+var vd = vec4(0.816497, -0.471405, 0.333333, 1);
 var numTimesToSubdivide = 5;
 var index = 0;
 
@@ -39,6 +39,53 @@ var eye;
 var at = vec3(0.0, 0.0, 0.0);
 var up = vec3(0.0, 1.0, 0.0);
 
+var texSize = 64;
+
+// Create a checkerboard pattern using floats
+
+////////////////////TEXTURE///////////////////////////
+var image1 = new Array()
+for (var i = 0; i < texSize; i++)  image1[i] = new Array();
+for (var i = 0; i < texSize; i++)
+    for (var j = 0; j < texSize; j++)
+        image1[i][j] = new Float32Array(4);
+for (var i = 0; i < texSize; i++) for (var j = 0; j < texSize; j++) {
+    var c = (((i & 0x8) == 0) ^ ((j & 0x8) == 0));
+    image1[i][j] = [c, c, c, 1];
+}
+
+// Convert floats to ubytes for texture
+
+var image2 = new Uint8Array(4 * texSize * texSize);
+
+for (var i = 0; i < texSize; i++)
+    for (var j = 0; j < texSize; j++)
+        for (var k = 0; k < 4; k++)
+            image2[4 * texSize * i + 4 * j + k] = 255 * image1[i][j][k];
+
+var texCoordsArray = [];
+
+var texCoord = [
+    vec2(0, 0),
+    vec2(0, 1),
+    vec2(1, 1),
+    vec2(1, 0)
+];
+
+function configureTexture(image) {
+    var texture = gl.createTexture();
+    gl.activeTexture( gl.TEXTURE0 );
+    gl.bindTexture( gl.TEXTURE_2D, texture );
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize, texSize, 0,
+        gl.RGBA, gl.UNSIGNED_BYTE, image);
+    gl.generateMipmap( gl.TEXTURE_2D );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,
+        gl.NEAREST_MIPMAP_LINEAR );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+}
+
+////////////////////TEXTURE///////////////////////////
 var theta = {
     "body": 45,
     "head": -90,
@@ -115,31 +162,35 @@ function triangle(a, b, c) {
 
     // normals are vectors
 
-    normals.push(a[0],a[1], a[2]);
-    normals.push(b[0],b[1], b[2]);
-    normals.push(c[0],c[1], c[2]);
+    normals.push(a[0], a[1], a[2]);
+    normals.push(b[0], b[1], b[2]);
+    normals.push(c[0], c[1], c[2]);
+
+    texCoordsArray.push(texCoord[0]);
+    texCoordsArray.push(texCoord[1]);
+    texCoordsArray.push(texCoord[2]);
 
     index += 3;
 }
 
 function divideTriangle(a, b, c, count) {
-    if ( count > 0 ) {
+    if (count > 0) {
 
-        var ab = mix( a, b, 0.5);
-        var ac = mix( a, c, 0.5);
-        var bc = mix( b, c, 0.5);
+        var ab = mix(a, b, 0.5);
+        var ac = mix(a, c, 0.5);
+        var bc = mix(b, c, 0.5);
 
         ab = normalize(ab, true);
         ac = normalize(ac, true);
         bc = normalize(bc, true);
 
-        divideTriangle( a, ab, ac, count - 1 );
-        divideTriangle( ab, b, bc, count - 1 );
-        divideTriangle( bc, c, ac, count - 1 );
-        divideTriangle( ab, bc, ac, count - 1 );
+        divideTriangle(a, ab, ac, count - 1);
+        divideTriangle(ab, b, bc, count - 1);
+        divideTriangle(bc, c, ac, count - 1);
+        divideTriangle(ab, bc, ac, count - 1);
     }
     else {
-        triangle( a, b, c );
+        triangle(a, b, c);
     }
 }
 
@@ -157,16 +208,22 @@ function quad(a, b, c, d) {
     var normal = vec3(normal);
 
     position.push(vertices[a]);
+    texCoordsArray.push(texCoord[0]);
     normals.push(normal);
     position.push(vertices[b]);
+    texCoordsArray.push(texCoord[1]);
     normals.push(normal);
     position.push(vertices[c]);
+    texCoordsArray.push(texCoord[2]);
     normals.push(normal);
     position.push(vertices[a]);
+    texCoordsArray.push(texCoord[0]);
     normals.push(normal);
     position.push(vertices[c]);
+    texCoordsArray.push(texCoord[2]);
     normals.push(normal);
     position.push(vertices[d]);
+    texCoordsArray.push(texCoord[3]);
     normals.push(normal);
 }
 
@@ -222,13 +279,13 @@ function initCallbackFunction() {
     }
 
     document.getElementById("toogleLighting").onchange = function (event) {
-    	if (this.checked){
-    		isLighting = true;
-    		gl.uniform1f(lightingLoc, 1.0);
-    	} else {
-    		isLighting = false;
-    		gl.uniform1f(lightingLoc, 0.1);
-    	}
+        if (this.checked) {
+            isLighting = true;
+            gl.uniform1f(lightingLoc, 1.0);
+        } else {
+            isLighting = false;
+            gl.uniform1f(lightingLoc, 0.1);
+        }
     }
 
     for (var i = 0; i < 8; i++) (function (i) {
@@ -238,13 +295,13 @@ function initCallbackFunction() {
     })(i);
 }
 
-function initShadowMatrix(){
-	light = vec3(Math.sin(0.3), 2, Math.cos(0.3));
-	mShadow = mat4();
-	mShadow[3][3] = 2;
-	mShadow[3][1] = -1/light[1];
+function initShadowMatrix() {
+    light = vec3(Math.sin(0.3), 2, Math.cos(0.3));
+    mShadow = mat4();
+    mShadow[3][3] = 2;
+    mShadow[3][1] = -1 / light[1];
 
-	shadowColorLoc = gl.getUniformLocation(program, "isShadow");
+    shadowColorLoc = gl.getUniformLocation(program, "isShadow");
 }
 
 window.onload = function init() {
@@ -285,7 +342,15 @@ window.onload = function init() {
 
     //Get Model View Matrix Location
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
+    //init texture
+    var tBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, tBuffer);
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(texCoordsArray), gl.STATIC_DRAW );
+    var vTexCoord = gl.getAttribLocation( program, "vTexCoord");
+    gl.vertexAttribPointer(vTexCoord, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vTexCoord);
 
+    configureTexture(image2);
 
     //Projection Matrix SetUp
     var projectionMatrix = ortho(-10, 10, -10, 10, -10, 10);
@@ -326,7 +391,7 @@ function render() {
 }
 
 function lightBulb() {
-	if (!isLighting) return;
+    if (!isLighting) return;
     var matrix = translate(8.0, 7.5, 0.0);
     drawSphere(matrix);
 }
@@ -543,15 +608,15 @@ function draw(matrix) {
     gl.uniform1i(shadowColorLoc, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 36);
 
-    if (!isLighting){
-    	return;
+    if (!isLighting) {
+        return;
     }
 
     // var shadowMatrix = mult(matrix, translate(light[0], light[1], light[2]));
     // shadowMatrix = mult(shadowMatrix, mShadow);
     // shadowMatrix = mult(shadowMatrix, translate(-light[0], -light[1], -light[2]));
 
-    var shadowMatrix = mult(translate(-3, -3., -5), matrix);	
+    var shadowMatrix = mult(translate(-3, -3., -5), matrix);
 
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(shadowMatrix));
     gl.uniform1i(shadowColorLoc, 1);
@@ -562,8 +627,8 @@ function draw(matrix) {
 function drawSphere(matrix) {
     gl.uniform1i(gl.getUniformLocation(program, "isSphere"), 1);
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(matrix));
-    for( var i=0; i<index; i+=3)
-        gl.drawArrays( gl.TRIANGLES, 36+i, 3 );
+    for (var i = 0; i < index; i += 3)
+        gl.drawArrays(gl.TRIANGLES, 36 + i, 3);
     gl.uniform1i(gl.getUniformLocation(program, "isSphere"), 0);
 
 }
