@@ -40,6 +40,7 @@ var at = vec3(0.0, 0.0, 0.0);
 var up = vec3(0.0, 1.0, 0.0);
 
 var texSize = 64;
+var texturei;
 
 // Create a checkerboard pattern using floats
 
@@ -72,9 +73,11 @@ var texCoord = [
     vec2(1, 0)
 ];
 
-function configureTexture(image) {
+var texturen = [gl.TEXTURE0, gl.TEXTURE1, gl.TEXTURE2];
+
+function configureTexture(image, n) {
     var texture = gl.createTexture();
-    gl.activeTexture( gl.TEXTURE0 );
+    gl.activeTexture( texturen[n] );
     gl.bindTexture( gl.TEXTURE_2D, texture );
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize, texSize, 0,
@@ -350,7 +353,7 @@ window.onload = function init() {
     gl.vertexAttribPointer(vTexCoord, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vTexCoord);
 
-    configureTexture(image2);
+    configureTexture(image2, 0);
 
     //Projection Matrix SetUp
     var projectionMatrix = ortho(-10, 10, -10, 10, -10, 10);
@@ -376,6 +379,7 @@ window.onload = function init() {
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     resetModelViewMatrix()
+    texturei = 0;
 
     lightBulb();
     body();
@@ -605,9 +609,11 @@ function carSingle(x) {
 
 function draw(matrix) {
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(matrix));
+    gl.uniform1i(gl.getUniformLocation(program, "texture"), texturei%3);
     gl.uniform1i(shadowColorLoc, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 36);
 
+    texturei++;
     if (!isLighting) {
         return;
     }
