@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>BukaGL-Worksheet 2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
+</head>
+
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+    attribute vec4 vPosition;
+    attribute vec3 vNormal;
+    varying vec4 fColor;
+
+    uniform mat4 modelViewMatrix;
+    uniform mat4 projectionMatrix;
+    uniform mat4 normalMatrix;
+
+    void main()
+    {
+        gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+        vec3 lightDirection = normalize(vec3(0.5, 0.5, 1));
+        fColor = vec4(0.2, 1.0, 0.2, 1.0);
+        vec3 normal =  normalize((normalMatrix*vec4(vNormal,0.0)).xyz);
+        float light = dot(normal, lightDirection);
+        fColor.rgb *= light;
+    }
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+
+    precision mediump float;
+
+    varying  vec4 fColor;
+
+    void main()
+    {
+        gl_FragColor = fColor;
+    }
+</script>
+<script type="text/javascript" src="Common/webgl-utils.js"></script>
+<script type="text/javascript" src="Common/initShaders.js"></script>
+<script type="text/javascript" src="Common/MV.js"></script>
+<script type="text/javascript" src="main.js"></script>
+
+<body>
+    <canvas id="gl-canvas" width="800" height="600">
+        Oops ... your browser doesn't support the HTML5 canvas element
+    </canvas>
+    <table>
+        <tr>
+            <td colspan="3">body angle</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="sliderBody" type="range" min="-180" max="180" step="10" value="45" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">legs angle</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="sliderLeg" type="range" min="-180" max="180" step="10" value="45" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">head angle</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="sliderHead" type="range" min="-180" max="180" step="10" value="-90" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">train 1</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="slider1" type="range" min="-180" max="180" step="10" value="0" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">train 2</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="slider2" type="range" min="-180" max="180" step="10" value="0" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">train 3</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="slider3" type="range" min="-180" max="180" step="10" value="0" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">train 4</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="slider4" type="range" min="-180" max="180" step="10" value="0" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">train 5 </td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="slider5" type="range" min="-180" max="180" step="10" value="0" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">train 6</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="slider6" type="range" min="-180" max="180" step="10" value="0" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">train 7</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="slider7" type="range" min="-180" max="180" step="10" value="0" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">train 8</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="slider8" type="range" min="-180" max="180" step="10" value="0" /> </td>
+            <td>180</td>
+        </tr>
+    </table>
+</body>
+
+</html>
