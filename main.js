@@ -25,6 +25,8 @@ var lightSpecular = vec4(1.0, 1.0, 1.0, 1.0);
 var light;
 var mShadow;
 var shadowColorLoc;
+var isLighting = true;
+
 var va = vec4(0.0, 0.0, -1.0,1);
 var vb = vec4(0.0, 0.942809, 0.333333, 1);
 var vc = vec4(-0.816497, -0.471405, 0.333333, 1);
@@ -216,6 +218,14 @@ function initCallbackFunction() {
 
     document.getElementById("materialSelector").onchange = function (ev) {
         setMaterial(materialOption[ev.target.value]);
+    }
+
+    document.getElementById("toogleLighting").onchange = function (event) {
+    	if (this.checked){
+    		isLighting = true;
+    	} else {
+    		isLighting = false;
+    	}
     }
 
     for (var i = 0; i < 8; i++) (function (i) {
@@ -525,6 +535,10 @@ function draw(matrix) {
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(matrix));
     gl.uniform1i(shadowColorLoc, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 36);
+
+    if (!isLighting){
+    	return;
+    }
 
     var shadowMatrix = mult(matrix, translate(light[0], light[1], light[2]));
     shadowMatrix = mult(shadowMatrix, mShadow);
