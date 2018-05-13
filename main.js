@@ -87,8 +87,22 @@ function configureTexture(image, n) {
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,
         gl.NEAREST_MIPMAP_LINEAR );
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
-    activeTextureLoc = gl.getUniformLocation(program, "activeTexture");
 }
+
+function configureTextureExternal(imageId, n ) {
+	var image = document.getElementById(imageId);
+	var texture = gl.createTexture();
+	gl.activeTexture( texturen[n] );
+	gl.bindTexture( gl.TEXTURE_2D, texture );
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB,
+         gl.RGB, gl.UNSIGNED_BYTE, image );
+    gl.generateMipmap( gl.TEXTURE_2D );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,
+                      gl.NEAREST_MIPMAP_LINEAR );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+}
+
 
 ////////////////////TEXTURE///////////////////////////
 var theta = {
@@ -356,7 +370,11 @@ window.onload = function init() {
     gl.enableVertexAttribArray(vTexCoord);
 
     texturen = [gl.TEXTURE0, gl.TEXTURE1, gl.TEXTURE2];
+    activeTextureLoc = gl.getUniformLocation(program, "activeTexture");
+
     configureTexture(image2, 0);
+    configureTextureExternal("texture1", 1);
+    configureTextureExternal("texture2", 2);
 
     //Projection Matrix SetUp
     var projectionMatrix = ortho(-10, 10, -10, 10, -10, 10);
@@ -461,7 +479,7 @@ function body() {
     var instanceMatrix = mult(translate(0, 0, 0.0), s);
     var t = mult(currentMatrix(), instanceMatrix);
 
-    draw(t, 1);
+    draw(t, 1, 1);
 }
 
 function head() {
@@ -474,7 +492,7 @@ function head() {
     var instanceMatrix = mult(currentMatrix(), translate(0.0, 0.0, 0.0));
     instanceMatrix = mult(instanceMatrix, s)
 
-    draw(instanceMatrix);
+    draw(instanceMatrix, 1, 0);
 }
 
 function hat() {
@@ -578,7 +596,7 @@ function carHead() {
     var s = scalem(size.car_head[0], size.car_head[1], size.car_head[2]);
     var instanceMatrix = mult(s, currentMatrix());
     instanceMatrix = mult(instanceMatrix, rotate(theta.train, 1, 0, 0));
-    draw(instanceMatrix);
+    draw(instanceMatrix, 1, 2);
 }
 
 function carBody() {
@@ -606,14 +624,14 @@ function carSingle(x) {
     }
     var instanceMatrix = mult(currentMatrix(), rotate(theta.train + x * 20, 1, 0, 0));
     instanceMatrix = mult(instanceMatrix, s);
-    draw(instanceMatrix);
+    draw(instanceMatrix, 1, 2);
 }
 
 
-function draw(matrix, isTextured=0) {
+function draw(matrix, isTextured=0, textureId=0) {
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(matrix));
     gl.uniform1i(activeTextureLoc, isTextured);
-    gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
+    gl.uniform1i(gl.getUniformLocation(program, "texture"), textureId);
     gl.uniform1i(shadowColorLoc, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 36);
 
