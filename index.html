@@ -19,6 +19,7 @@
     uniform mat4 projectionMatrix;
     uniform vec4 lightPosition;
     uniform float shininess;
+    uniform int isShadow;
 
     void main()
     {
@@ -53,9 +54,14 @@
         } 
 
         gl_Position = projectionMatrix * modelViewMatrix * vPosition;
-        fColor = ambient + diffuse +specular;
-        
-        fColor.a = 1.0;
+
+        if (isShadow == 1){
+        	fColor = vec4(0,0,0,1);
+    	} else {
+	        fColor = ambient + diffuse +specular;
+	        
+	        fColor.a = 1.0;
+    	}
     }
 </script>
 
@@ -67,7 +73,7 @@
 
     void main()
     {
-        gl_FragColor = fColor;
+        	gl_FragColor = fColor;
     }
 </script>
 <script type="text/javascript" src="Common/webgl-utils.js"></script>

@@ -22,6 +22,10 @@ var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0);
 var lightDiffuse = vec4(1.0, 1.0, 1.0, 1.0);
 var lightSpecular = vec4(1.0, 1.0, 1.0, 1.0);
 
+var light;
+var mShadow;
+var shadowColorLoc;
+
 var theta = {
     "body": 45,
     "head": -90,
@@ -158,6 +162,15 @@ function initCallbackFunction() {
     })(i);
 }
 
+function initShadowMatrix(){
+	light = vec3(Math.sin(0.3), 2, Math.cos(0.3));
+	mShadow = mat4();
+	mShadow[3][3] = 2;
+	mShadow[3][1] = -1/light[1];
+
+	shadowColorLoc = gl.getUniformLocation(program, "isShadow");
+}
+
 window.onload = function init() {
     canvas = document.getElementById("gl-canvas");
     gl = WebGLUtils.setupWebGL(canvas);
@@ -211,8 +224,8 @@ window.onload = function init() {
     setMaterial(materialOption["gold"]);
 
     initCallbackFunction();
+    initShadowMatrix();
     render();
-
 }
 
 function render() {
@@ -440,7 +453,17 @@ function carSingle(x) {
 
 function draw(matrix) {
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(matrix));
+    gl.uniform1i(shadowColorLoc, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 36);
+
+    var shadowMatrix = mult(matrix, translate(light[0], light[1], light[2]));
+    shadowMatrix = mult(shadowMatrix, mShadow);
+    shadowMatrix = mult(shadowMatrix, translate(-light[0], -light[1], -light[2]));
+
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(shadowMatrix));
+    gl.uniform1i(shadowColorLoc, 1);
+    gl.drawArrays(gl.TRIANGLES, 0, 36);
+
 }
 
 function setMaterial(opt) {
