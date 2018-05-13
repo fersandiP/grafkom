@@ -73,7 +73,7 @@ var texCoord = [
     vec2(1, 0)
 ];
 
-var texturen = [gl.TEXTURE0, gl.TEXTURE1, gl.TEXTURE2];
+var texturen;
 
 function configureTexture(image, n) {
     var texture = gl.createTexture();
@@ -353,6 +353,7 @@ window.onload = function init() {
     gl.vertexAttribPointer(vTexCoord, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vTexCoord);
 
+    texturen = [gl.TEXTURE0, gl.TEXTURE1, gl.TEXTURE2];
     configureTexture(image2, 0);
 
     //Projection Matrix SetUp
@@ -609,7 +610,7 @@ function carSingle(x) {
 
 function draw(matrix) {
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(matrix));
-    gl.uniform1i(gl.getUniformLocation(program, "texture"), texturei%3);
+    // gl.uniform1i(gl.getUniformLocation(program, "texture"), texturei%3);
     gl.uniform1i(shadowColorLoc, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 36);
 
