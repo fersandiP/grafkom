@@ -30,7 +30,6 @@
         
         vec3 light = lightPosition.xyz;
         vec3 L = light - normalize(pos );
-
         
         vec3 E = normalize( -pos );
         vec3 H = normalize( L + E );
@@ -63,8 +62,9 @@
 	        
 	        fColor.a = 1.0;
         }
+
         if(isSphere == 1) {
-            fColor = vec4(1,1,0,1);
+            fColor = vec4(1.0,1.0,0.0,1.0);
         }
     }
 </script>
