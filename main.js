@@ -385,9 +385,7 @@ function render() {
     texturei = 0;
 
     lightBulb();
-    gl.uniform1i(activeTextureLoc, 1);
     body();
-    gl.uniform1i(activeTextureLoc, 0);
     leg1();
     leg2();
     drawHand();
@@ -463,7 +461,7 @@ function body() {
     var instanceMatrix = mult(translate(0, 0, 0.0), s);
     var t = mult(currentMatrix(), instanceMatrix);
 
-    draw(t);
+    draw(t, 1);
 }
 
 function head() {
@@ -612,9 +610,10 @@ function carSingle(x) {
 }
 
 
-function draw(matrix) {
+function draw(matrix, isTextured=0) {
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(matrix));
-    // gl.uniform1i(gl.getUniformLocation(program, "texture"), texturei%3);
+    gl.uniform1i(activeTextureLoc, isTextured);
+    gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
     gl.uniform1i(shadowColorLoc, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 36);
 
@@ -622,10 +621,6 @@ function draw(matrix) {
     if (!isLighting) {
         return;
     }
-
-    // var shadowMatrix = mult(matrix, translate(light[0], light[1], light[2]));
-    // shadowMatrix = mult(shadowMatrix, mShadow);
-    // shadowMatrix = mult(shadowMatrix, translate(-light[0], -light[1], -light[2]));
 
     var shadowMatrix = mult(translate(-3, -3., -5), matrix);
 
