@@ -282,7 +282,7 @@ window.onload = function init() {
 
     //Set light position
     var lightPositionLocation = gl.getUniformLocation(program, 'lightPosition');
-    var lightPos = vec4(1.0, 1.0, 1.0, 0.0);
+    var lightPos = vec4(1.0, 1.0, 0.0, 0.0);
     gl.uniform4fv(lightPositionLocation, flatten(lightPos));
 
     setMaterial(materialOption["gold"]);
@@ -310,7 +310,7 @@ function render() {
 }
 
 function lightBulb() {
-    var matrix = translate(6, 5, -0.5);
+    var matrix = translate(8.0, 7.5, 0.0);
     drawSphere(matrix);
 }
 
@@ -537,9 +537,11 @@ function draw(matrix) {
 }
 
 function drawSphere(matrix) {
+    gl.uniform1i(gl.getUniformLocation(program, "isSphere"), 1);
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(matrix));
     for( var i=0; i<index; i+=3)
-        gl.drawArrays( gl.TRIANGLES, 36+i, 3 )
+        gl.drawArrays( gl.TRIANGLES, 36+i, 3 );
+    gl.uniform1i(gl.getUniformLocation(program, "isSphere"), 0);
 
 }
 
