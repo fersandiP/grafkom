@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>BukaGL-Worksheet 3</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+    attribute vec4 vPosition;
+    attribute vec3 vNormal;
+    attribute  vec2 vTexCoord;
+    varying vec4 fColor;
+    varying vec2 fTexCoord;
+
+    uniform vec4 ambientProduct, diffuseProduct, specularProduct;
+    uniform mat4 modelViewMatrix;
+    uniform mat4 projectionMatrix;
+    uniform vec4 lightPosition;
+    uniform float shininess;
+    uniform int isShadow;
+    uniform int isSphere;
+    uniform float lighting;
+
+    void main()
+    {
+        vec3 pos = -(modelViewMatrix * vPosition).xyz;
+    
+        //fixed light postion
+        
+        vec3 light = lightPosition.xyz;
+        vec3 L = light - normalize(pos );
+        
+        vec3 E = normalize( -pos );
+        vec3 H = normalize( L + E );
+        
+        vec4 NN = vec4(vNormal,0);
+
+        // Transform vertex normal into eye coordinates
+        
+        vec3 N = normalize( (modelViewMatrix*NN).xyz);
+
+        // Compute terms in the illumination equation
+        vec4 ambient = ambientProduct;
+
+        float Kd = max( dot(L, N), 0.0 );
+        vec4  diffuse = Kd*diffuseProduct;
+
+        float Ks = pow( max(dot(N, H), 0.0), shininess );
+        vec4  specular = Ks * specularProduct;
+        
+        if( dot(L, N) < 0.0 ) {
+        specular = vec4(0.0, 0.0, 0.0, 1.0);
+        } 
+
+        gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+
+        if (isShadow == 1){
+        	fColor = vec4(0,0,0,1);
+        } else {
+	        fColor = lighting * (ambient + diffuse +specular);
+	        
+	        fColor.a = 1.0;
+        }
+
+        if(isSphere == 1) {
+            fColor = vec4(1.0,1.0,0.0,1.0);
+        }
+
+        fTexCoord = vTexCoord;
+    }
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+
+    precision mediump float;
+
+    varying  vec4 fColor;
+    varying  vec2 fTexCoord;
+    uniform sampler2D texture;
+
+    void main()
+    {       
+        int activeTexture = 0;
+        if(activeTexture == 1){
+                gl_FragColor = fColor*texture2D( texture, fTexCoord );
+            } else {
+                gl_FragColor = fColor;
+            }
+        	
+    }
+</script>
+<script type="text/javascript" src="Common/webgl-utils.js"></script>
+<script type="text/javascript" src="Common/initShaders.js"></script>
+<script type="text/javascript" src="Common/MV.js"></script>
+<script type="text/javascript" src="mainv2.js"></script>
+
+<body>
+    <canvas id="gl-canvas" width="800" height="600">
+        Oops ... your browser doesn't support the HTML5 canvas element
+    </canvas>
+    <div class="menu">
+        <select id="materialSelector">
+            <option value="gold">Gold</option>
+            <option value="emerald">Emerald</option>
+            <option value="perl">Perl</option>
+            <option value="obsidian">Obsidian</option>
+        </select>
+        <input type="checkbox" name="lighting" id="toogleLighting" checked> Toogle Lighting
+    </div>
+    <table>
+        <tr>
+            <td colspan="3">body angle</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="sliderBody" type="range" min="-180" max="180" step="10" value="45" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">legs angle</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="sliderLeg" type="range" min="-180" max="180" step="10" value="45" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">head angle</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="sliderHead" type="range" min="-180" max="180" step="10" value="-90" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">train 1</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="slider1" type="range" min="-180" max="180" step="10" value="0" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">train 2</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="slider2" type="range" min="-180" max="180" step="10" value="0" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">train 3</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="slider3" type="range" min="-180" max="180" step="10" value="0" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">train 4</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="slider4" type="range" min="-180" max="180" step="10" value="0" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">train 5 </td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="slider5" type="range" min="-180" max="180" step="10" value="0" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">train 6</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="slider6" type="range" min="-180" max="180" step="10" value="0" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">train 7</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="slider7" type="range" min="-180" max="180" step="10" value="0" /> </td>
+            <td>180</td>
+        </tr>
+
+        <tr>
+            <td colspan="3">train 8</td>
+        </tr>
+        <tr>
+            <td>-180</td>
+            <td>
+                <input id="slider8" type="range" min="-180" max="180" step="10" value="0" /> </td>
+            <td>180</td>
+        </tr>
+    </table>
+
+    <img src="texture1.jpeg" id="texture1" hidden>
+    <img src="texture2.jpeg" id="texture2" hidden>
+</body>
+
+</html>
