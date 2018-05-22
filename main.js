@@ -26,6 +26,7 @@ var light;
 var mShadow;
 var shadowColorLoc;
 var activeTextureLoc;
+var isViewLoc;
 var lightingLoc;
 var isLighting = true;
 
@@ -270,6 +271,58 @@ function setCube() {
     quad(5, 4, 0, 1);
 }
 
+function setView() {
+    //left
+    position.push(vec4(-1.0, -1.0, -1.0, 1.0));
+    position.push(vec4(-1.0, -1.0, 1.0, 1.0));
+    position.push(vec4(-1.0, 1.0,  1.0, 1.0));
+    position.push(vec4(-1.0, 1.0,  -1.0, 1.0));
+    //right
+    position.push(vec4(1.0, -1.0, -1.0, 1.0));
+    position.push(vec4(1.0, -1.0, 1.0, 1.0));
+    position.push(vec4(1.0, 1.0,  1.0, 1.0));
+    position.push(vec4(1.0, 1.0,  -1.0, 1.0));
+    //back
+    position.push(vec4(-1.0, -1.0, 1.0, 1.0));
+    position.push(vec4(-1.0, 1.0, 1.0, 1.0));
+    position.push(vec4(1.0, 1.0,  1.0, 1.0));
+    position.push(vec4(1.0, -1.0,  1.0, 1.0));
+    for(var i=0; i<12;i++) {
+        texCoordsArray.push(texCoord[0]);
+        normals.push(vec3(1.0,1.0,1.0));
+    }
+    
+}
+
+function drawViewLeft() {
+    var s = scalem(6, 9, 1);
+    s = mult(translate(-3.3,0,0),s);
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(s));
+    gl.drawArrays(gl.LINE_LOOP,36+index,4)
+    
+}
+
+function drawViewRight() {
+    var s = scalem(6, 9, 1);
+    s = mult(translate(3.3,0,0),s);
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(s));
+    gl.drawArrays(gl.LINE_LOOP,40+index,4)
+    
+}
+
+function drawViewBack() {
+    var s = scalem(9.65, 9, 1);
+    s = mult(translate(0,0,0),s); 
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(s));
+    gl.drawArrays(gl.LINE_LOOP,44+index,4)
+}
+
+function drawView() {
+    drawViewLeft();
+    drawViewRight();
+    drawViewBack();
+}
+
 function initCallbackFunction() {
     document.onkeydown = function (ev) {
         switch (ev.keyCode) {
@@ -340,6 +393,7 @@ window.onload = function init() {
 
     setCube();
     tetrahedron(va, vb, vc, vd, numTimesToSubdivide);
+    setView();
 
     //Insert position to vertex shader
     var positionBuffer = gl.createBuffer();
@@ -371,6 +425,7 @@ window.onload = function init() {
 
     texturen = [gl.TEXTURE0, gl.TEXTURE1, gl.TEXTURE2];
     activeTextureLoc = gl.getUniformLocation(program, "activeTexture");
+    isViewLoc = gl.getUniformLocation(program, "isView");
 
     configureTexture(image2, 0);
     configureTextureExternal("texture1", 1);
@@ -401,7 +456,7 @@ function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     resetModelViewMatrix()
     texturei = 0;
-
+    drawView();
     lightBulb();
     body();
     leg1();
@@ -417,7 +472,7 @@ function render() {
 
 function lightBulb() {
     if (!isLighting) return;
-    var matrix = translate(8.0, 7.5, 0.0);
+    var matrix = translate(8.0, 7.5, -10.0);
     drawSphere(matrix);
 }
 
