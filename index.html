@@ -56,12 +56,13 @@
         specular = vec4(0.0, 0.0, 0.0, 1.0);
         } 
 
-        gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+        float zToDivideBy = 1.0 + vPosition.z * 0.25;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(vPosition.xyz,zToDivideBy);
 
         if (isShadow == 1){
         	fColor = vec4(0,0,0,1);
         } else {
-	        fColor = lighting * (ambient + diffuse +specular);
+	        fColor = lighting * (ambient + diffuse + specular);
 	        
 	        fColor.a = 1.0;
         }
